@@ -39,15 +39,15 @@ with table.batch_writer() as batch:
     for i in range(rows):
         batch.put_item(
             Item = {
-                'file' : filenames[i],
-                'date' : dates[i],
-                'time' : time[i],
-                'location' : location[i],
-                'zipcode' : zip[i],
-                'subspecies' : subspecies[i],
-                'health' : health[i],
-                'pollen_carrying' : pollen_carrying[i],
-                'caste': caste[i]
+                'file' : str(filenames[i]),
+                'date' : str(dates[i]),
+                'time' : str(time[i]),
+                'location' : str(location[i]),
+                'zipcode' : str(zip[i]),
+                'subspecies' : str(subspecies[i]),
+                'health' : str(health[i]),
+                'pollen_carrying' : str(pollen_carrying[i]),
+                'caste': str(caste[i])
             }
         )
 print('Uploaded all data to the table')
