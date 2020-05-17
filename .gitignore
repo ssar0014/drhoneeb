@@ -1,5 +1,5 @@
 .env
+.ipynb_checkpoints
 bee_imgs/
-image_model_2.py
 jupyter/
 __pycache__/

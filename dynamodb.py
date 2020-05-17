@@ -31,8 +31,8 @@ table = db.create_table(
             ],
 
             ProvisionedThroughput={
-            'ReadCapacityUnits':6000,
-            'WriteCapacityUnits':6000
+            'ReadCapacityUnits':1,
+            'WriteCapacityUnits':1
             }
         )
 
