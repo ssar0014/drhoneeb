@@ -17,17 +17,17 @@ graph = tf.get_default_graph()
 # s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
 loaded_model = load_model('bee_healthy_or_not.h5')
 unhealthy_model = load_model('unhealthy_status.h5')
+species_model = load_model('bee_species.h5')
+
+# initiate the flags for each classification
 healthy_or_not = ''
 unhealthy_status = ''
+species = ''
 
 app = Flask(__name__)
 
 # curl -F "image=@bee_imgs/bee_imgs/041_066.png" http://127.0.0.1:5000/test
 @app.route('/test', methods=['POST'])
-# define auxilary functions to check the health condition of the bees
-# if healthy, return the species and the health status of the bee
-# if the bee is unhealthy, run the second neural net to classify the type of disease
-# return the type of disease along with the species
 def get_predictions():
     raw_image = image.load_img(request.files['image'],target_size=(50, 54))
     img = image.img_to_array(raw_image)
@@ -36,9 +36,23 @@ def get_predictions():
     # create list for final response
     responses = list()
 
+    # get the species of the bee from the first neural network trained to classify bee species
+    with graph.as_default():
+        species_pred = species_model.predict(img)
+    if species_pred[0][0] == 1:
+        species = 'Italian Honey Bee'
+    elif species_pred[0][1] == 1:
+        species = 'Russian Honey Bee'
+    elif species_pred[0][2] == 1:
+        species = 'Carniolan Honey Bee'
+    elif species_pred[0][3] == 1:
+        species = 'Hybrid Breed Honey Bee'
+    # now run the 2nd neural net to get the health status - healthy or unhealthy
+    # if healthy, return the species and the health status of the bee
+    # if the bee is unhealthy, run the 3rd neural net to classify the type of disease
+    # return the type of disease along with the species
     with graph.as_default():
         prediction = loaded_model.predict(img)
-    #prediction = prediction.tolist()
     if prediction[0][0] > 0.5:
         healthy_or_not = 'healthy'
     else:
@@ -52,9 +66,11 @@ def get_predictions():
             unhealthy_status = 'Ant Infestation'
         elif unhealthy_prediction[0][2] == 1:
             unhealthy_status = 'Robbed Hive'
-
-    responses.append({'status': healthy_or_not,'problem': unhealthy_status,'species': 'dummy'})
+    # attach all the responses to a list and format it as json
+    responses.append({'status': healthy_or_not,'problem': unhealthy_status,'species': species})
     responses = json.dumps({'response':responses})
+    
+    # response from the API is sent as a json response, and the same is written to a file
     try:
         with open('result.json','w+') as out:
             json.dump(responses, out, ensure_ascii=True, indent=4)
