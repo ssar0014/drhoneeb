@@ -3,7 +3,8 @@ from flask import Flask, jsonify, request, Response
 import json
 import os
 import boto3
-#from config import S3_BUCKET, S3_KEY, S3_SECRET
+from boto3 import client
+from config import S3_BUCKET, S3_KEY, S3_SECRET
 
 import numpy as np
 import tensorflow as tf
@@ -12,16 +13,16 @@ from keras.preprocessing import image
 from keras.models import load_model
 import cv2
 
-graph = tf.get_default_graph()
 # Set up the S3 bucket with our credentials
-# s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
-loaded_model = load_model('bee_healthy_or_not.h5')
-unhealthy_model = load_model('unhealthy_status.h5')
-species_model = load_model('bee_species.h5')
+s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
+
+# Set the resource and client information
+s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
+s3_client = boto3.client('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
 
 # initiate the flags for each classification
 healthy_or_not = ''
-unhealthy_status = ''
+unhealthy_status = 'The Bee is healthy'
 species = ''
 
 app = Flask(__name__)
@@ -29,6 +30,16 @@ app = Flask(__name__)
 # curl -F "image=@bee_imgs/bee_imgs/041_066.png" http://127.0.0.1:5000/test
 @app.route('/test', methods=['POST'])
 def get_predictions():
+    graph = tf.get_default_graph()
+    loaded_model_client = s3_client.download_file(S3_BUCKET,'models/bee_healthy_or_not.h5', "/tmp/bee_healthy_or_not.h5")
+    loaded_model = load_model("/tmp/bee_healthy_or_not.h5")
+
+    unhealthy_model_client = s3_client.download_file(S3_BUCKET,'models/unhealthy_status.h5', "/tmp/unhealthy_status.h5")
+    unhealthy_model = load_model("/tmp/unhealthy_status.h5")
+
+    species_model_client = s3_client.download_file(S3_BUCKET,'models/bee_species.h5', "/tmp/bee_species.h5")
+    species_model = load_model("/tmp/bee_species.h5")
+
     raw_image = image.load_img(request.files['image'],target_size=(50, 54))
     img = image.img_to_array(raw_image)
     img = np.expand_dims(img, axis=0)
@@ -69,11 +80,14 @@ def get_predictions():
     # attach all the responses to a list and format it as json
     responses.append({'status': healthy_or_not,'problem': unhealthy_status,'species': species})
     responses = json.dumps({'response':responses})
-    
+
     # response from the API is sent as a json response, and the same is written to a file
+    # the file is then sent to S3
     try:
         with open('result.json','w+') as out:
             json.dump(responses, out, ensure_ascii=True, indent=4)
+        s3Obj = s3.Object(S3_BUCKET, 'result.json')
+        s3Obj.put(Body=(bytes(json.dumps(responses).encode('UTF-8'))))
         return Response(response=responses, mimetype='text/plain', status=200)
     except FileNotFoundError:
         abort(404)
