@@ -11,7 +11,6 @@ import tensorflow as tf
 import keras
 from keras.preprocessing import image
 from keras.models import load_model
-import cv2
 
 # Set up the S3 bucket with our credentials
 s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
