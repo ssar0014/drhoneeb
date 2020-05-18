@@ -39,7 +39,10 @@ def get_predictions():
     species_model_client = s3_client.download_file(S3_BUCKET,'models/bee_species.h5', "/tmp/bee_species.h5")
     species_model = load_model("/tmp/bee_species.h5")
 
-    raw_image = image.load_img(request.files['image'],target_size=(50, 54))
+    image_file = request.files['image']
+    image_file.save('/tmp/user_photo.png')
+
+    raw_image = image.load_img('/tmp/user_photo.png',target_size=(50, 54))
     img = image.img_to_array(raw_image)
     img = np.expand_dims(img, axis=0)
 
