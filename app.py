@@ -3,7 +3,6 @@ from flask import Flask, jsonify, request, Response
 import json
 import os
 import boto3
-from boto3 import client
 from config import S3_BUCKET, S3_KEY, S3_SECRET
 
 import numpy as np
@@ -15,9 +14,11 @@ from keras.models import load_model
 # Set up the S3 bucket with our credentials
 s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
 
-# Set the resource and client information
-s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
-s3_client = boto3.client('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
+# get the models
+graph = tf.get_default_graph()
+loaded_model = load_model("./bee_healthy_or_not.h5")
+unhealthy_model = load_model("./unhealthy_status.h5")
+species_model = load_model("./bee_species.h5")
 
 # initiate the flags for each classification
 healthy_or_not = ''
@@ -29,19 +30,8 @@ app = Flask(__name__)
 # curl -F "image=@bee_imgs/bee_imgs/041_066.png" http://127.0.0.1:5000/test
 @app.route('/test', methods=['POST'])
 def get_predictions():
-    graph = tf.get_default_graph()
-    loaded_model_client = s3_client.download_file(S3_BUCKET,'models/bee_healthy_or_not.h5', "/tmp/bee_healthy_or_not.h5")
-    loaded_model = load_model("/tmp/bee_healthy_or_not.h5")
-
-    unhealthy_model_client = s3_client.download_file(S3_BUCKET,'models/unhealthy_status.h5', "/tmp/unhealthy_status.h5")
-    unhealthy_model = load_model("/tmp/unhealthy_status.h5")
-
-    species_model_client = s3_client.download_file(S3_BUCKET,'models/bee_species.h5', "/tmp/bee_species.h5")
-    species_model = load_model("/tmp/bee_species.h5")
-
     image_file = request.files['image']
     image_file.save('/tmp/user_photo.png')
-
     raw_image = image.load_img('/tmp/user_photo.png',target_size=(50, 54))
     img = image.img_to_array(raw_image)
     img = np.expand_dims(img, axis=0)
