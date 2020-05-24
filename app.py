@@ -27,7 +27,7 @@ species = ''
 
 def getImage():
     #image_file = request.files['image']
-    image_file = s3.Bucket(S3_BUCKET).download_file('user_photo.png', '/tmp/user_photo.png')
+    image_file = s3.Bucket(S3_BUCKET).download_file('public/user_photo.png', '/tmp/user_photo.png')
     #image_file.save('/tmp/user_photo.png')
     raw_image = image.load_img('/tmp/user_photo.png',target_size=(50, 54))
     img = image.img_to_array(raw_image)
