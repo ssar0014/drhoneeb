@@ -25,19 +25,26 @@ healthy_or_not = ''
 unhealthy_status = 'The Bee is healthy'
 species = ''
 
-app = Flask(__name__)
-
-# curl -F "image=@bee_imgs/bee_imgs/041_066.png" http://127.0.0.1:5000/test
-@app.route('/test', methods=['POST'])
-def get_predictions():
-    image_file = request.files['image']
-    image_file.save('/tmp/user_photo.png')
+def getImage():
+    #image_file = request.files['image']
+    image_file = s3.Bucket(S3_BUCKET).download_file('user_photo.png', '/tmp/user_photo.png')
+    #image_file.save('/tmp/user_photo.png')
     raw_image = image.load_img('/tmp/user_photo.png',target_size=(50, 54))
     img = image.img_to_array(raw_image)
     img = np.expand_dims(img, axis=0)
+    return img
 
+
+app = Flask(__name__)
+
+# curl -F "image=@bee_imgs/bee_imgs/041_066.png" http://127.0.0.1:5000/test
+@app.route('/test', methods=['GET']) # change it to POST
+def get_predictions():
     # create list for final response
     responses = list()
+
+    # get the image data
+    img = getImage()
 
     # get the species of the bee from the first neural network trained to classify bee species
     with graph.as_default():
