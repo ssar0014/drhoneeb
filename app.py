@@ -20,11 +20,17 @@ loaded_model = load_model("./bee_healthy_or_not.h5")
 unhealthy_model = load_model("./unhealthy_status.h5")
 species_model = load_model("./bee_species.h5")
 
-# initiate the flags for each classification
-global healthy_or_not = ''
-global unhealthy_status = 'The Bee is healthy'
-global species = ''
+# set the flags as being global in scope to be used inside the function
+global healthy_or_not
+global unhealthy_status
+global species
 
+# initiate the flags for each classification
+healthy_or_not = ''
+unhealthy_status = 'The Bee is healthy'
+species = ''
+
+# define a function to fetch the image from S3 and process it such that it is ready to be fed into the neural net
 def getImage():
     #image_file = request.files['image']
     image_file = s3.Bucket(S3_BUCKET).download_file('public/user_photo.png', '/tmp/user_photo.png')
