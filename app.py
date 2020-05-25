@@ -21,9 +21,9 @@ unhealthy_model = load_model("./unhealthy_status.h5")
 species_model = load_model("./bee_species.h5")
 
 # initiate the flags for each classification
-healthy_or_not = ''
-unhealthy_status = 'The Bee is healthy'
-species = ''
+global healthy_or_not = ''
+global unhealthy_status = 'The Bee is healthy'
+global species = ''
 
 def getImage():
     #image_file = request.files['image']
