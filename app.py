@@ -27,7 +27,7 @@ global species
 
 # initiate the flags for each classification
 healthy_or_not = ''
-unhealthy_status = 'The Bee is healthy'
+unhealthy_status = ''
 species = ''
 
 # define a function to fetch the image from S3 and process it such that it is ready to be fed into the neural net
@@ -71,6 +71,7 @@ def get_predictions():
         prediction = loaded_model.predict(img)
     if prediction[0][0] > 0.5:
         healthy_or_not = 'healthy'
+        unhealthy_status = 'Bee is healthy'
     else:
         healthy_or_not = 'unhealthy'
         with graph.as_default():
