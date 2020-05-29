@@ -11,6 +11,13 @@ import keras
 from keras.preprocessing import image
 from keras.models import load_model
 
+import fastai
+from fastai.vision import *
+from fastai.vision import transform
+from fastai.vision.data import *
+from fastai.vision.image import *
+from fastai.vision import data
+
 # Set up the S3 bucket with our credentials
 global s3
 s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SECRET)
@@ -19,13 +26,17 @@ s3 = boto3.resource('s3', aws_access_key_id=S3_KEY, aws_secret_access_key=S3_SEC
 global loaded_model
 global unhealthy_model
 global species_model
+global learner
 global graph
 graph = tf.get_default_graph()
 loaded_model = load_model("./bee_healthy_or_not.h5")
 unhealthy_model = load_model("./unhealthy_status.h5")
 species_model = load_model("./bee_species.h5")
+path = './'
+learner = load_learner(path)
 
 # set the flags as being global in scope to be used inside the function
+global bee_flag
 global healthy_or_not
 global unhealthy_status
 global species
@@ -33,15 +44,30 @@ global species
 # define a function to fetch the image from S3 and process it such that it is ready to be fed into the neural net
 def getImage():
     image_file = s3.Bucket(S3_BUCKET).download_file('public/user_photo.png', '/tmp/user_photo.png')
-    raw_image = image.load_img('/tmp/user_photo.png', grayscale=False, target_size=(50, 54))
+    raw_image = image.load_img('user_photo.png', grayscale=False, target_size=(50, 54))
     img = image.img_to_array(raw_image)
     img = np.expand_dims(img, axis=0)
     return img
+
+#define a function to check if the image is that of a bee or not
+def bee_not_not():
+    image_file = s3.Bucket(S3_BUCKET).download_file('public/user_photo.png', '/tmp/user_photo.png')
+    filename = 'user_photo.png'
+    im = open_image(filename)
+    learner.precompute=False # We'll pass in a raw image, not activations
+    preds = learner.predict(im)
+    preds = list(preds)
+    classes = preds[2].tolist()
+    if classes[0] < classes[1]:
+        return 'not bee'
+    else:
+        print 'bee'
 
 def getSpecies(img_data):
     with graph.as_default():
         species_pred = species_model.predict(img_data)
     species_pred = species_pred.tolist()
+    return species_pred
     if species_pred[0][0] > 0.95:
         return 'Italian Honey Bee'
     elif species_pred[0][1] > 0.95:
@@ -57,6 +83,7 @@ def getBeeCondition(img_data):
     with graph.as_default():
         prediction = loaded_model.predict(img_data)
     prediction = prediction.tolist()
+    return prediction
     if prediction[0][0] > 0.5:
         return ('healthy')
     else:
@@ -66,6 +93,7 @@ def getBeeProblem(img_data):
     with graph.as_default():
         unhealthy_prediction = unhealthy_model.predict(img_data)
     unhealthy_prediction = unhealthy_prediction.tolist()
+    return unhealthy_prediction
     if unhealthy_prediction[0][0] > 0.95:
         return ('Varroa Mite Infestation')
     elif unhealthy_prediction[0][1] > 0.95:
@@ -81,6 +109,7 @@ app = Flask(__name__)
 @app.route('/test', methods=['GET']) # change it to POST
 def get_predictions():
     # initiate the flags for each classification
+    bee_flag = ''
     healthy_or_not = ''
     unhealthy_status = ''
     species = ''
@@ -88,26 +117,33 @@ def get_predictions():
     # create list for final response
     responses = list()
 
-    # get the image data
-    img = getImage()
+    # first we check the condition of if the user photo is that of a bee or not
+    bee_flag = bee_not_not()
+    # we only proceed if given image is of a bee else, we return a status in the response saying that it is not a bee
+    if bee_flag == 'bee':
+        # get the image data in keras format
+        img = getImage()
 
-    # get the species of the bee from the first neural network trained to classify bee species
-    species = getSpecies(img)
-    # now run the 2nd neural net to get the health status - healthy or unhealthy
-    # if healthy, return the species and the health status of the bee
-    # if the bee is unhealthy, run the 3rd neural net to classify the type of disease
-    # return the type of disease along with the species
-    healthy_or_not = getBeeCondition(img)
+        # get the species of the bee from the first neural network trained to classify bee species
+        species = getSpecies(img)
+        # now run the 2nd neural net to get the health status - healthy or unhealthy
+        # if healthy, return the species and the health status of the bee
+        # if the bee is unhealthy, run the 3rd neural net to classify the type of disease
+        # return the type of disease along with the species
+        healthy_or_not = getBeeCondition(img)
 
-    if healthy_or_not == 'healthy':
-        unhealthy_status = 'Bee is Healthy'
+        if healthy_or_not == 'healthy':
+            unhealthy_status = 'Bee is Healthy'
+        else:
+            unhealthy_status = getBeeProblem(img)
+
+            # attach all the responses to a list and format it as json
+            responses.append({'status': healthy_or_not,'problem': unhealthy_status,'species': species})
+            responses = json.dumps({'response':responses})
     else:
-        unhealthy_status = getBeeProblem(img)
-
-    # attach all the responses to a list and format it as json
-    responses.append({'status': healthy_or_not,'problem': unhealthy_status,'species': species})
-    responses = json.dumps({'response':responses})
-
+        # attach all the responses to a list and format it as json
+        responses.append({'status': bee_flag, 'problem': unhealthy_status,'species': species})
+        responses = json.dumps({'response':responses})
     # response from the API is sent as a json response
     try:
         return Response(response=responses, mimetype='text/plain', status=200)
