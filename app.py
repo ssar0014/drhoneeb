@@ -42,7 +42,6 @@ def getSpecies(img_data):
     with graph.as_default():
         species_pred = species_model.predict(img_data)
     species_pred = species_pred.tolist()
-    return species_pred
     if species_pred[0][0] > 0.95:
         return 'Italian Honey Bee'
     elif species_pred[0][1] > 0.95:
@@ -58,7 +57,6 @@ def getBeeCondition(img_data):
     with graph.as_default():
         prediction = loaded_model.predict(img_data)
     prediction = prediction.tolist()
-    return prediction
     if prediction[0][0] > 0.5:
         return ('healthy')
     else:
@@ -68,7 +66,6 @@ def getBeeProblem(img_data):
     with graph.as_default():
         unhealthy_prediction = unhealthy_model.predict(img_data)
     unhealthy_prediction = unhealthy_prediction.tolist()
-    return unhealthy_prediction
     if unhealthy_prediction[0][0] > 0.95:
         return ('Varroa Mite Infestation')
     elif unhealthy_prediction[0][1] > 0.95:
