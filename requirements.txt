@@ -17,7 +17,6 @@ cymem==2.0.3
 dataclasses==0.7
 docutils==0.15.2
 durationpy==0.5
-fastai==1.0.61
 fastprogress==0.2.3
 Flask==1.1.2
 future==0.18.2
@@ -78,8 +77,6 @@ text-unidecode==1.3
 thinc==7.4.0
 threadpoolctl==2.0.0
 toml==0.10.1
-torch==1.5.0
-torchvision==0.6.0
 tqdm==4.46.0
 troposphere==2.6.1
 urllib3==1.25.9
