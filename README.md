@@ -1,3 +1,5 @@
+# Dr.HoneeB - Bee Health Condition Classifier 
+
 ## **What is an API?**
 -	An API is basically a set of rules which lets programs (client and server) communicate in order to get and send information in the form of requests
 -	It stands for Application Programming Interface.
@@ -14,36 +16,48 @@ o	`OKhttp` - https://square.github.io/okhttp/
 
 o	`HttpURLConnection` https://developer.android.com/reference/java/net/HttpURLConnection.html
 
-What is Middleware?
-* Need to do more research
-Web Server Gateway Interface?
-* Need to do more research
-What Web server should be used?
-* Need to do more research
+## What is Middleware?
+* Middleware is computer software that provides services to software applications beyond those available from the operating system. It can be described as "software glue".
+
+* Middleware makes it easier for software developers to implement communication and input/output, so they can focus on the specific purpose of their application. It gained popularity in the 1980s as a solution to the problem of how to link newer applications to older legacy systems, although the term had been in use since 1968.
+
+* A middleware component can perform such functions as:
+
+    1. Routing a request to different application objects based on the target URL, after changing the environment variables accordingly.
+    2. Allowing multiple applications or frameworks to run side-by-side in the same process
+    3. Load balancing and remote processing, by forwarding requests and responses over a network
+    4. Performing content post-processing, such as applying XSLT stylesheets
 
 
-## **Serverless Deep Learning with Tensorflow and AWS**
+## What is a Web Server Gateway Interface?
 
-Why do we want to go serverless?
-- A serverless approach is very scalable. It can scale up to 10k concurrent requests without writing any additional logic. It’s perfect for handling random high loads, as it doesn’t take any additional time to scale.
-- We don’t have to pay for unused server time. Serverless architectures have pay-as-you-go model. Meaning, if you have 25k requests per month, you will only pay for 25k requests.
-- The infrastructure itself becomes a lot easier. You don’t have to handle Docker containers, logic for multiple requests, or cluster orchestration.
+* The Web Server Gateway Interface (WSGI) is a simple calling convention for web servers to forward requests to web applications or frameworks written in the Python programming language.
+* WSGI was created as an implementation-agnostic interface between web servers and web applications or frameworks to promote common ground for portable web application development.
+* The WSGI has two sides:
+    1. *Server/gateway side* - This is often running full web server software such as Apache or Nginx, or is a lightweight application server that can communicate with a webserver, such as flup.
+    2. *Application/framework side* - This is a Python callable, supplied by the Python program or framework.
+Between the server and the application, there may be one or more WSGI middleware components, which implement both sides of the API, typically in Python code.
 
-However, there are certain limitations of serverless approach:
-- AWS Lambda has limits to the number of requests that can be made in a given time
-- In some large scale applications, where the number of requests are extremely high - like 10M or more per month, having a dedicated cluster will be better in terms of load handling as well as being cost effective
-- Lambda and Tensorflow both take time to startup. This could create problems with applications where near real-time computation is needed.
+* WSGI does not specify how the Python interpreter should be started, nor how the application object should be loaded or configured, and different frameworks and webservers achieve this in different ways.
 
-Since our application is both small scale and does not need real time computation speed, we can go ahead with the Tensorflow and Lambda stack, which also has the following:
+**We are using the Gunicorn framework as our WSGI HTTP server**
 
-1. `API Gateway` for managing requests
+## What Web server should be used?
+* To host our API, we are using Heroku.
 
-2. `AWS Lambda` for processing
 
-3. `S3 Buckets` for holding the trained model
+## **Deep Learning with Tensorflow, and Keras**
+* There are 3 models built, one each to identify Bee Health, Bee Unhealthy condition, and Bee Species
+* The flow of the code is as follows: 
+    1. Once a picture has been identified as containing a bee (from the `bee filter` classifier), the first neural net checks the species of the bee. Regardless of if the bee is healthy or not, we need to identify the species so that classifier runs first.
+    2. The second neural net then checks if the given photo has a healthy or unhealthy bee. 
+    3. If there is a healthy bee we do not proceed further and exit the process by returning the species and the health condition as being healthy
+    4. If however, the bee is unhealthy the last neural net runs to classify it into one of three unhealthy categories - `Ant Infestation`, `Varroa Mite Infestation`, `Robeed Hive`
+* All models in this repository are built on Keras-2.2.5 and Tensorflow-1.1.4
+* There are 3 Jupyter notebook files which contain all the pre-processing of data, and the build of the model. To run them, simply open up a Jupyter Notebook kernel and run all cells. 
+* The model is output as an HDF5 file, which are then called by the API.
 
-4. `Serverless Framework` for handling deployment and configuration
-
-### More Documentation to Follow
-
-### Need to add a list of current and potential challenges
+## **API and hosting on Heroku**
+* The API was built on Python Flask
+* There is one route `/test` which loads in the image from S3, and the model HDF5 files, runs the algorithm described above, and returns the output as a JSON response.
+* The API, and all models are hosted on Heroku, and are available at `https://drhoneeb.herokuapp.com/test`
