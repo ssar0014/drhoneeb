@@ -40,7 +40,7 @@ pandas==1.0.3
 Pillow==7.1.2
 pip-tools==5.1.2
 placebo==0.9.0
-protobuf==3.12.0
+protobuf==3.18.3
 pyparsing==2.4.7
 python-dateutil==2.6.1
 python-slugify==4.0.0
